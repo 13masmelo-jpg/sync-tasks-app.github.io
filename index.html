@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyncTasks | Sincronización Automática</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado con estado de sincronización -->
+        <header class="main-header">
+            <div class="header-top">
+                <h1><i class="fas fa-sync-alt fa-spin"></i> SyncTasks</h1>
+                <div class="sync-indicator">
+                    <div id="sync-status" class="sync-status offline">
+                        <i class="fas fa-wifi-slash"></i> Sin conexión
+                    </div>
+                    <div id="last-sync" class="last-sync">
+                        Última sync: <span>--:--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <button id="manual-sync" class="btn-sync">
+                    <i class="fas fa-sync"></i> Sincronizar Ahora
+                </button>
+                <button id="github-login" class="btn-github">
+                    <i class="fab fa-github"></i> Conectar GitHub
+                </button>
+                <div class="device-id">
+                    <i class="fas fa-mobile-alt"></i> 
+                    <span id="device-name">Dispositivo-${Math.random().toString(36).substr(2, 4)}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Panel de información de sincronización -->
+        <div class="sync-info-panel">
+            <div class="sync-info-card">
+                <i class="fas fa-database"></i>
+                <div>
+                    <h4>Almacenamiento Local</h4>
+                    <p id="local-storage">Cargando...</p>
+                </div>
+            </div>
+            <div class="sync-info-card">
+                <i class="fab fa-github"></i>
+                <div>
+                    <h4>GitHub Sync</h4>
+                    <p id="github-status">No conectado</p>
+                </div>
+            </div>
+            <div class="sync-info-card">
+                <i class="fas fa-cloud"></i>
+                <div>
+                    <h4>Estado Sincronización</h4>
+                    <p id="sync-details">Esperando conexión...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="main-app">
+            <!-- Columna izquierda: Formulario -->
+            <div class="left-column">
+                <div class="card">
+                    <h2><i class="fas fa-plus-circle"></i> Nueva Tarea</h2>
+                    <form id="task-form">
+                        <div class="form-group">
+                            <input type="text" id="task-title" 
+                                   placeholder="¿Qué necesitas hacer?" 
+                                   required
+                                   autocomplete="off">
+                            <small class="hint">Esta tarea se sincronizará en todos tus dispositivos</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <textarea id="task-description" 
+                                      placeholder="Descripción detallada..."
+                                      rows="3"></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-flag"></i> Prioridad</label>
+                                <div class="priority-selector">
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="low" checked>
+                                        <span class="priority-dot low"></span>
+                                        <span>Baja</span>
+                                    </label>
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="medium">
+                                        <span class="priority-dot medium"></span>
+                                        <span>Media</span>
+                                    </label>
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="high">
+                                        <span class="priority-dot high"></span>
+                                        <span>Alta</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label><i class="fas fa-tag"></i> Categoría</label>
+                                <select id="task-category">
+                                    <option value="personal">Personal</option>
+                                    <option value="work">Trabajo</option>
+                                    <option value="study">Estudio</option>
+                                    <option value="shopping">Compras</option>
+                                    <option value="health">Salud</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar"></i> Fecha Límite</label>
+                            <input type="date" id="task-deadline">
+                        </div>
+                        
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-plus"></i> Agregar Tarea
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Panel de sincronización -->
+                <div class="card sync-panel">
+                    <h3><i class="fas fa-cloud-upload-alt"></i> Sincronización</h3>
+                    <div class="sync-controls">
+                        <div class="sync-option">
+                            <input type="checkbox" id="auto-sync" checked>
+                            <label for="auto-sync">Sincronización automática</label>
+                        </div>
+                        <div class="sync-option">
+                            <input type="checkbox" id="notifications" checked>
+                            <label for="notifications">Notificaciones</label>
+                        </div>
+                        <button id="force-sync" class="btn-secondary">
+                            <i class="fas fa-bolt"></i> Forzar Sincronización
+                        </button>
+                    </div>
+                    <div class="sync-log" id="sync-log">
+                        <!-- Log de sincronización aparecerá aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna derecha: Lista de tareas -->
+            <div class="right-column">
+                <div class="card">
+                    <div class="tasks-header">
+                        <h2><i class="fas fa-tasks"></i> Mis Tareas</h2>
+                        <div class="task-filters">
+                            <button class="filter-btn active" data-filter="all">Todas</button>
+                            <button class="filter-btn" data-filter="pending">Pendientes</button>
+                            <button class="filter-btn" data-filter="completed">Completadas</button>
+                            <button class="filter-btn" data-filter="today">Hoy</button>
+                        </div>
+                    </div>
+                    
+                    <div class="tasks-container">
+                        <div id="tasks-list" class="tasks-list">
+                            <div class="loading-tasks">
+                                <i class="fas fa-spinner fa-spin"></i> Cargando tareas...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tasks-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Total:</span>
+                            <span id="summary-total" class="summary-value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Pendientes:</span>
+                            <span id="summary-pending" class="summary-value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Sincronizadas:</span>
+                            <span id="summary-synced" class="summary-value">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Panel de dispositivos conectados -->
+                <div class="card devices-panel">
+                    <h3><i class="fas fa-laptop-house"></i> Dispositivos Conectados</h3>
+                    <div id="devices-list" class="devices-list">
+                        <div class="device-item">
+                            <i class="fas fa-laptop"></i>
+                            <span>Este dispositivo</span>
+                            <span class="device-status online">En línea</span>
+                        </div>
+                    </div>
+                    <div class="devices-info">
+                        <p><i class="fas fa-info-circle"></i> Las tareas se sincronizan automáticamente entre todos los dispositivos donde uses esta app</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de configuración de GitHub -->
+        <div id="github-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2><i class="fab fa-github"></i> Configurar GitHub Sync</h2>
+                
+                <div class="modal-body">
+                    <div class="setup-step">
+                        <h3>Paso 1: Crea un Token de GitHub</h3>
+                        <ol>
+                            <li>Ve a <a href="https://github.com/settings/tokens" target="_blank">GitHub Tokens</a></li>
+                            <li>Clica en "Generate new token"</li>
+                            <li>Selecciona el scope <code>repo</code></li>
+                            <li>Copia el token generado</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <h3>Paso 2: Configura tu repositorio</h3>
+                        <div class="form-group">
+                            <label>Token de GitHub:</label>
+                            <input type="password" id="github-token" 
+                                   placeholder="ghp_tuTokenAquí">
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre de usuario:</label>
+                            <input type="text" id="github-username" 
+                                   placeholder="tu-usuario">
+                        </div>
+                        <div class="form-group">
+                            <label>Repositorio:</label>
+                            <input type="text" id="github-repo" 
+                                   placeholder="mis-tareas" 
+                                   value="mis-tareas">
+                        </div>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <h3>Paso 3: Probar conexión</h3>
+                        <button id="test-github" class="btn-secondary">
+                            <i class="fas fa-plug"></i> Probar Conexión
+                        </button>
+                        <p id="test-result" class="test-result"></p>
+                    </div>
+                    
+                    <button id="save-github-config" class="btn-primary">
+                        <i class="fas fa-save"></i> Guardar Configuración
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de conflicto de sincronización -->
+        <div id="sync-conflict-modal" class="modal">
+            <div class="modal-content">
+                <h2><i class="fas fa-exclamation-triangle"></i> Conflicto de Sincronización</h2>
+                <p>Se detectaron cambios conflictivos en diferentes dispositivos.</p>
+                <div class="conflict-options">
+                    <button class="btn-secondary" id="use-local">Usar datos locales</button>
+                    <button class="btn-secondary" id="use-remote">Usar datos del servidor</button>
+                    <button class="btn-primary" id="merge-changes">Combinar cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="github-config.js"></script>
+    <script src="sync-manager.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
