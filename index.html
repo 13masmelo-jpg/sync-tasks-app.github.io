@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LevenFashion | Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        :root {
+            --leven-black: #1a1a1a;
+            --leven-white: #ffffff;
+            --leven-gray: #7a7a7a;
+            --leven-light-gray: #f8f8f8;
+            --leven-gold: #d4af37;
+            --leven-burgundy: #800020;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 10px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: var(--leven-black);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ===== LOGIN CONTAINER ===== */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 50px;
+            background: white;
+            box-shadow: var(--shadow);
+            text-align: center;
+            border-radius: 0;
+            border-top: 4px solid var(--leven-burgundy);
+        }
+        
+        .login-container h2 {
+            margin-bottom: 40px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: var(--leven-black);
+            text-transform: uppercase;
+        }
+        
+        .login-error {
+            color: #dc3545;
+            margin-top: 15px;
+            font-size: 14px;
+            min-height: 20px;
+            padding: 10px;
+            background: #fff5f5;
+            border: 1px solid #ffcccc;
+            display: none;
+        }
+        
+        .login-error.show {
+            display: block;
+        }
+        
+        /* ===== FORM STYLES ===== */
+        .form-group {
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 500;
+            color: var(--leven-black);
+            font-size: 13px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 16px 20px;
+            border: 1px solid #ddd;
+            border-radius: 0;
+            font-size: 15px;
+            transition: var(--transition);
+            background: var(--leven-light-gray);
+            font-family: inherit;
+        }
+        
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--leven-burgundy);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(128, 0, 32, 0.1);
+        }
+        
+        .form-textarea {
+            min-height: 140px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        /* ===== BUTTONS ===== */
+        .cta-button {
+            background: var(--leven-black);
+            color: white;
+            border: 2px solid var(--leven-black);
+            padding: 18px 45px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 0;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .cta-button:hover {
+            background: var(--leven-burgundy);
+            border-color: var(--leven-burgundy);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(128, 0, 32, 0.2);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--leven-black);
+            border: 1px solid #ddd;
+        }
+        
+        .btn-secondary:hover {
+            background: #f8f8f8;
+            border-color: #ccc;
+            transform: translateY(-2px);
+        }
+        
+        /* ===== HEADER ===== */
+        .main-header {
+            background: var(--leven-white);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--leven-burgundy) 0%, var(--leven-gold) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 22px;
+            transition: var(--transition);
+        }
+
+        .logo:hover .logo-icon {
+            transform: rotate(10deg);
+        }
+
+        .logo-text {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: var(--leven-black);
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            color: var(--leven-burgundy);
+            font-weight: 300;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .admin-toggle {
+            background: var(--leven-black);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-toggle:hover {
+            background: var(--leven-burgundy);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(128, 0, 32, 0.2);
+        }
+        
+        /* ===== ADMIN PANEL CONTENT ===== */
+        .admin-panel-content {
+            padding: 50px 0;
+            min-height: calc(100vh - 200px);
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .admin-header h2 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            font-size: 28px;
+            color: var(--leven-black);
+        }
+        
+        .admin-header h2 i {
+            color: var(--leven-burgundy);
+            margin-right: 15px;
+        }
+        
+        /* ===== ADMIN TABS ===== */
+        .admin-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 50px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            flex-wrap: wrap;
+        }
+
+        .admin-tab {
+            padding: 18px 35px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--leven-gray);
+            transition: var(--transition);
+            position: relative;
+            font-size: 13px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border-bottom: 3px solid transparent;
+        }
+
+        .admin-tab:hover {
+            color: var(--leven-black);
+            background: var(--leven-light-gray);
+        }
+
+        .admin-tab.active {
+            color: var(--leven-black);
+            border-bottom-color: var(--leven-burgundy);
+        }
+
+        .admin-tab.active::after {
+            display: none;
+        }
+        
+        /* ===== TAB CONTENT ===== */
+        .admin-tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .admin-tab-content.active {
+            display: block;
+        }
+        
+        /* ===== PRODUCT FORM ===== */
+        .form-section {
+            background: white;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid #f0f0f0;
+        }
+        
+        .form-section h3 {
+            font-weight: 300;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+            color: var(--leven-black);
+            font-size: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        /* ===== SIZE SELECTOR ===== */
+        .size-options {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .size-option {
+            min-width: 60px;
+            height: 60px;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            font-size: 16px;
+            background: white;
+        }
+
+        .size-option.selected {
+            border-color: var(--leven-burgundy);
+            background: var(--leven-burgundy);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(128, 0, 32, 0.2);
+        }
+        
+        /* ===== PRODUCTS LIST ===== */
+        .products-list {
+            display: grid;
+            gap: 25px;
+        }
+        
+        .product-card-admin {
+            background: white;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid #f0f0f0;
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            transition: var(--transition);
+        }
+        
+        .product-card-admin:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-color: #e0e0e0;
+        }
+        
+        .product-image-admin {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border: 1px solid #eee;
+            background: var(--leven-light-gray);
+            flex-shrink: 0;
+        }
+        
+        .product-image-admin[src=""] {
+            background: linear-gradient(45deg, #f5f5f5, #e0e0e0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .product-info-admin {
+            flex: 1;
+        }
+        
+        .product-info-admin h4 {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: var(--leven-black);
+        }
+        
+        .product-meta {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .product-meta-item {
+            font-size: 14px;
+            color: var(--leven-gray);
+        }
+        
+        .product-meta-item strong {
+            color: var(--leven-black);
+            margin-right: 8px;
+            font-weight: 500;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            cursor: pointer;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+        }
+        
+        .btn-edit {
+            background: var(--leven-black);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            cursor: pointer;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-edit:hover {
+            background: var(--leven-burgundy);
+            transform: translateY(-2px);
+        }
+        
+        /* ===== ORDERS TABLE ===== */
+        .orders-table-container {
+            background: white;
+            padding: 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid #f0f0f0;
+            overflow-x: auto;
+        }
+        
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        
+        .orders-table th {
+            background: var(--leven-light-gray);
+            padding: 20px 15px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--leven-black);
+            border-bottom: 1px solid #eee;
+        }
+        
+        .orders-table td {
+            padding: 20px 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            vertical-align: top;
+        }
+        
+        .order-status {
+            padding: 8px 16px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .btn-status {
+            background: var(--leven-black);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: var(--transition);
+            border-radius: 3px;
+        }
+        
+        .btn-status:hover {
+            background: var(--leven-burgundy);
+            transform: translateY(-2px);
+        }
+        
+        /* ===== EMPTY STATES ===== */
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+            color: var(--leven-gray);
+            background: white;
+            box-shadow: var(--shadow);
+            border: 1px solid #f0f0f0;
+        }
+        
+        .empty-state i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        .empty-state h3 {
+            font-weight: 300;
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: var(--leven-black);
+        }
+        
+        .empty-state p {
+            max-width: 500px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        
+        /* ===== NOTIFICATIONS ===== */
+        .notification {
+            position: fixed;
+            top: 120px;
+            right: 30px;
+            background: #155724;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 0;
+            box-shadow: var(--shadow);
+            z-index: 4000;
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px;
+            letter-spacing: 1px;
+            max-width: 350px;
+            border-left: 4px solid #d4edda;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .notification.error {
+            background: #721c24;
+            border-left-color: #f8d7da;
+        }
+        
+        .notification.warning {
+            background: #856404;
+            border-left-color: #fff3cd;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        
+        /* ===== LOADING SPINNER ===== */
+        .loading-spinner {
+            text-align: center;
+            padding: 60px;
+            color: var(--leven-gray);
+        }
+        
+        .loading-spinner i {
+            font-size: 40px;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1200px) {
+            .container {
+                padding: 0 30px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .product-card-admin {
+                flex-direction: column;
+            }
+            
+            .product-image-admin {
+                width: 100%;
+                height: 200px;
+            }
+            
+            .admin-tabs {
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+            
+            .admin-tab {
+                white-space: nowrap;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .login-container {
+                margin: 50px 20px;
+                padding: 30px;
+            }
+            
+            .admin-header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .admin-panel-content {
+                padding: 30px 0;
+            }
+            
+            .form-section, .orders-table-container {
+                padding: 30px;
+            }
+            
+            .product-meta {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .orders-table-container {
+                margin: 0 -20px;
+                padding: 20px;
+                border-left: none;
+                border-right: none;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .admin-tabs {
+                justify-content: flex-start;
+            }
+            
+            .product-actions {
+                flex-direction: column;
+            }
+            
+            .btn-edit, .btn-delete {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        /* ===== URL INPUT HINT ===== */
+        .url-hint {
+            font-size: 12px;
+            color: var(--leven-gray);
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        
+        .url-hint a {
+            color: var(--leven-burgundy);
+            text-decoration: none;
+        }
+        
+        .url-hint a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- CONTENEDOR DE LOGIN -->
+    <div id="login-container" class="login-container">
+        <h2><i class="fas fa-lock"></i> ADMINISTRADOR</h2>
+        <div class="form-group">
+            <input type="email" id="admin-email" class="form-input" placeholder="Correo electrónico" required>
+        </div>
+        <div class="form-group">
+            <input type="password" id="admin-password" class="form-input" placeholder="Contraseña" required>
+        </div>
+        <div id="login-error" class="login-error"></div>
+        <button class="cta-button" onclick="loginAdmin()">
+            <i class="fas fa-sign-in-alt"></i> INICIAR SESIÓN
+        </button>
+        <p style="margin-top: 30px; color: var(--leven-gray); font-size: 13px;">
+            <a href="index.html" style="color: var(--leven-burgundy); text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-arrow-left"></i> Volver al catálogo
+            </a>
+        </p>
+    </div>
+
+    <!-- PANEL ADMIN (oculto inicialmente) -->
+    <div id="admin-panel" style="display: none;">
+        <!-- HEADER -->
+        <header class="main-header">
+            <div class="container">
+                <div class="header-content">
+                    <a href="index.html" class="logo">
+                        <div class="logo-icon">LF</div>
+                        <div class="logo-text">LEVEN<span>FASHION</span></div>
+                    </a>
+                    
+                    <div class="header-actions">
+                        <button class="admin-toggle" onclick="logoutAdmin()">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTENIDO DEL PANEL -->
+        <div class="container admin-panel-content">
+            <div class="admin-header">
+                <h2><i class="fas fa-cog"></i> PANEL DE ADMINISTRACIÓN</h2>
+                <a href="index.html" class="admin-toggle">
+                    <i class="fas fa-store"></i> Ver Catálogo
+                </a>
+            </div>
+            
+            <div class="admin-tabs">
+                <button class="admin-tab active" onclick="showAdminTab('add')">Agregar Producto</button>
+                <button class="admin-tab" onclick="showAdminTab('manage')">Gestionar Productos</button>
+                <button class="admin-tab" onclick="showAdminTab('business')">Información Empresa</button>
+                <button class="admin-tab" onclick="showAdminTab('collections')">Colecciones Footer</button>
+                <button class="admin-tab" onclick="showAdminTab('orders')">Pedidos</button>
+            </div>
+            
+            <!-- TAB: AGREGAR PRODUCTO -->
+            <div class="admin-tab-content active" id="tab-add">
+                <div class="form-section">
+                    <form id="add-product-form">
+                        <h3>AGREGAR NUEVO PRODUCTO</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Nombre del Producto *</label>
+                                <input type="text" class="form-input" id="product-name" required placeholder="Ej: Vestido de Noche Elegante">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Categoría *</label>
+                                <select class="form-select" id="product-category" required>
+                                    <option value="">Seleccionar categoría</option>
+                                    <option value="women">Mujer</option>
+                                    <option value="men">Hombre</option>
+                                    <option value="accessories">Accesorios</option>
+                                    <option value="new">Nueva Colección</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Descripción *</label>
+                            <textarea class="form-textarea" id="product-description" required 
+                                    placeholder="Describe el producto detalladamente (materiales, corte, características especiales)..."></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Precio ($) *</label>
+                                <input type="number" class="form-input" id="product-price" required min="0" step="0.01" placeholder="199.99">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Cantidad en Stock *</label>
+                                <input type="number" class="form-input" id="product-stock" required min="0" placeholder="50">
+                            </div>
+                        </div>
+                        
+                        <!-- URL DE IMÁGENES -->
+                        <div class="form-group">
+                            <label class="form-label">URLs de Imágenes (separadas por coma) *</label>
+                            <textarea class="form-textarea" id="product-image-urls" required 
+                                    placeholder="https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800&h=800&fit=crop
+https://images.unsplash.com/photo-1594938374189-8a7dae63d59d?w=800&h=800&fit=crop"></textarea>
+                            <p class="url-hint">
+                                <strong>Recomendado:</strong> Usa <a href="https://unsplash.com" target="_blank">Unsplash</a> para imágenes gratuitas de alta calidad.<br>
+                                Formato: Una URL por línea o separadas por coma.
+                            </p>
+                        </div>
+                        
+                        <!-- TALLAS -->
+                        <div class="form-group">
+                            <label class="form-label">Tallas Disponibles *</label>
+                            <div class="size-options" id="size-selector">
+                                <div class="size-option" onclick="toggleSize(this)">XS</div>
+                                <div class="size-option" onclick="toggleSize(this)">S</div>
+                                <div class="size-option" onclick="toggleSize(this)">M</div>
+                                <div class="size-option" onclick="toggleSize(this)">L</div>
+                                <div class="size-option" onclick="toggleSize(this)">XL</div>
+                                <div class="size-option" onclick="toggleSize(this)">Único</div>
+                            </div>
+                            <p class="url-hint">Haz clic para seleccionar las tallas disponibles</p>
+                        </div>
+                        
+                        <button type="submit" class="cta-button">
+                            <i class="fas fa-plus-circle"></i> AGREGAR PRODUCTO A LA COLECCIÓN
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- TAB: GESTIONAR PRODUCTOS -->
+            <div class="admin-tab-content" id="tab-manage">
+                <div class="form-section">
+                    <h3>GESTIONAR PRODUCTOS</h3>
+                    <div id="admin-products-list">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Cargando productos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TAB: INFORMACIÓN EMPRESA -->
+            <div class="admin-tab-content" id="tab-business">
+                <div class="form-section">
+                    <form id="business-info-form">
+                        <h3>INFORMACIÓN DE CONTACTO</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Teléfono *</label>
+                                <input type="text" class="form-input" id="business-phone" required placeholder="+52 55 1234 5678">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-input" id="business-email" required placeholder="contacto@levenfashion.com">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Dirección *</label>
+                            <textarea class="form-textarea" id="business-address" required 
+                                    placeholder="Calle, número, colonia, ciudad, estado, código postal"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Facebook</label>
+                            <input type="text" class="form-input" id="business-facebook" placeholder="https://facebook.com/levenfashion">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Instagram</label>
+                                <input type="text" class="form-input" id="business-instagram" placeholder="https://instagram.com/levenfashion">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Twitter/X</label>
+                                <input type="text" class="form-input" id="business-twitter" placeholder="https://twitter.com/levenfashion">
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="cta-button">
+                            <i class="fas fa-save"></i> GUARDAR INFORMACIÓN
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- TAB: COLECCIONES FOOTER -->
+            <div class="admin-tab-content" id="tab-collections">
+                <div class="form-section">
+                    <form id="collections-form">
+                        <h3>COLECCIONES EN EL FOOTER</h3>
+                        <p style="color: var(--leven-gray); margin-bottom: 30px; font-size: 14px; line-height: 1.6;">
+                            Edita las colecciones que aparecen en la sección "COLECCIONES" del pie de página.
+                            Estas aparecerán tanto en el catálogo público como en el panel de administración.
+                        </p>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Colección 1 *</label>
+                            <input type="text" class="form-input" id="collection-1" required placeholder="Colección Primavera-Verano">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Colección 2 *</label>
+                            <input type="text" class="form-input" id="collection-2" required placeholder="Colección Otoño-Invierno">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Colección 3 *</label>
+                            <input type="text" class="form-input" id="collection-3" required placeholder="Moda Nupcial">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Colección 4 *</label>
+                            <input type="text" class="form-input" id="collection-4" required placeholder="Accesorios Exclusivos">
+                        </div>
+                        
+                        <button type="submit" class="cta-button">
+                            <i class="fas fa-save"></i> GUARDAR COLECCIONES
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- TAB: PEDIDOS -->
+            <div class="admin-tab-content" id="tab-orders">
+                <div class="orders-table-container">
+                    <h3 style="font-weight: 300; margin-bottom: 30px; letter-spacing: 1px; color: var(--leven-black);">PEDIDOS RECIBIDOS</h3>
+                    <div id="orders-list">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Cargando pedidos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN FIREBASE - REEMPLAZAR CON TUS DATOS
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2LusYI6w28pDOBtalUX-mltJcqcKSk60",
+            authDomain: "levenfashion-206d4.firebaseapp.com",
+            projectId: "levenfashion-206d4",
+            storageBucket: "levenfashion-206d4.firebasestorage.app",
+            messagingSenderId: "579451879117",
+            appId: "1:579451879117:web:3fb55cd55b171ad328f384",
+            measurementId: "G-GVYVT76Y2V"
+        };
+
+        // Inicializar Firebase (sin Storage)
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Variables globales
+        let products = [];
+        let orders = [];
+        let businessInfo = {
+            phone: "+52 55 1234 5678",
+            email: "contacto@levenfashion.com",
+            address: "Ciudad de México",
+            facebook: "",
+            instagram: "",
+            twitter: ""
+        };
+        let footerCollections = [
+            "Colección Primavera-Verano",
+            "Colección Otoño-Invierno",
+            "Moda Nupcial",
+            "Accesorios Exclusivos"
+        ];
+
+        // Verificar autenticación al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // Usuario autenticado
+                    document.getElementById('login-container').style.display = 'none';
+                    document.getElementById('admin-panel').style.display = 'block';
+                    cargarDatosAdmin();
+                } else {
+                    // No autenticado
+                    document.getElementById('login-container').style.display = 'block';
+                    document.getElementById('admin-panel').style.display = 'none';
+                }
+            });
+            
+            // Configurar formularios
+            configurarFormularios();
+        });
+
+        // FUNCIÓN DE LOGIN
+        async function loginAdmin() {
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+            const errorDiv = document.getElementById('login-error');
+            
+            errorDiv.textContent = '';
+            errorDiv.classList.remove('show');
+            
+            if (!email || !password) {
+                errorDiv.textContent = 'Por favor completa todos los campos';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                // El cambio de estado se maneja en onAuthStateChanged
+            } catch (error) {
+                console.error('Error de login:', error);
+                errorDiv.textContent = getErrorMessage(error.code);
+                errorDiv.classList.add('show');
+            }
+        }
+
+        // FUNCIÓN DE LOGOUT
+        async function logoutAdmin() {
+            try {
+                await auth.signOut();
+                window.location.href = 'admin.html';
+            } catch (error) {
+                console.error('Error cerrando sesión:', error);
+                showNotification('Error al cerrar sesión', 'error');
+            }
+        }
+
+        // FUNCIÓN PARA CARGAR DATOS DEL ADMIN
+        async function cargarDatosAdmin() {
+            try {
+                // Cargar productos
+                await cargarProductos();
+                
+                // Cargar pedidos
+                await cargarPedidos();
+                
+                // Cargar información de empresa
+                await cargarInformacionEmpresa();
+                
+                // Cargar colecciones
+                await cargarColecciones();
+                
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+                showNotification('Error cargando datos', 'error');
+            }
+        }
+
+        // CARGAR PRODUCTOS
+        async function cargarProductos() {
+            try {
+                const productsList = document.getElementById('admin-products-list');
+                productsList.innerHTML = `
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Cargando productos...</p>
+                    </div>
+                `;
+                
+                const snapshot = await db.collection('products').get();
+                products = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                mostrarProductosAdmin();
+                
+            } catch (error) {
+                console.error('Error cargando productos:', error);
+                document.getElementById('admin-products-list').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Error al cargar productos</h3>
+                        <p>No se pudieron cargar los productos. Por favor intenta nuevamente.</p>
+                        <button class="cta-button" onclick="cargarProductos()" style="width: auto; padding: 12px 30px;">
+                            <i class="fas fa-redo"></i> Reintentar
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // CARGAR PEDIDOS
+        async function cargarPedidos() {
+            try {
+                const ordersList = document.getElementById('orders-list');
+                ordersList.innerHTML = `
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Cargando pedidos...</p>
+                    </div>
+                `;
+                
+                const snapshot = await db.collection('orders').orderBy('date', 'desc').get();
+                orders = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                mostrarPedidosAdmin();
+                
+            } catch (error) {
+                console.error('Error cargando pedidos:', error);
+                document.getElementById('orders-list').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Error al cargar pedidos</h3>
+                        <p>No se pudieron cargar los pedidos. Por favor intenta nuevamente.</p>
+                        <button class="cta-button" onclick="cargarPedidos()" style="width: auto; padding: 12px 30px;">
+                            <i class="fas fa-redo"></i> Reintentar
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // CARGAR INFORMACIÓN DE EMPRESA
+        async function cargarInformacionEmpresa() {
+            try {
+                const doc = await db.collection('business').doc('info').get();
+                if (doc.exists) {
+                    businessInfo = doc.data();
+                    
+                    // Llenar formulario
+                    document.getElementById('business-phone').value = businessInfo.phone || '';
+                    document.getElementById('business-email').value = businessInfo.email || '';
+                    document.getElementById('business-address').value = businessInfo.address || '';
+                    document.getElementById('business-facebook').value = businessInfo.facebook || '';
+                    document.getElementById('business-instagram').value = businessInfo.instagram || '';
+                    document.getElementById('business-twitter').value = businessInfo.twitter || '';
+                }
+            } catch (error) {
+                console.error('Error cargando información empresa:', error);
+            }
+        }
+
+        // CARGAR COLECCIONES
+        async function cargarColecciones() {
+            try {
+                const doc = await db.collection('business').doc('collections').get();
+                if (doc.exists) {
+                    footerCollections = doc.data().items || [];
+                    
+                    // Llenar formulario
+                    if (footerCollections.length >= 4) {
+                        document.getElementById('collection-1').value = footerCollections[0] || '';
+                        document.getElementById('collection-2').value = footerCollections[1] || '';
+                        document.getElementById('collection-3').value = footerCollections[2] || '';
+                        document.getElementById('collection-4').value = footerCollections[3] || '';
+                    }
+                }
+            } catch (error) {
+                console.error('Error cargando colecciones:', error);
+            }
+        }
+
+        // MOSTRAR PRODUCTOS EN ADMIN
+        function mostrarProductosAdmin() {
+            const container = document.getElementById('admin-products-list');
+            if (!container) return;
+            
+            if (products.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-tshirt"></i>
+                        <h3>No hay productos</h3>
+                        <p>Aún no hay productos en la colección. Agrega tu primer producto usando la pestaña "Agregar Producto".</p>
+                        <button class="cta-button" onclick="showAdminTab('add')" style="width: auto; padding: 12px 30px;">
+                            <i class="fas fa-plus"></i> Agregar Primer Producto
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="products-list">
+                    ${products.map(product => {
+                        // Función segura para obtener categoría
+                        const category = product.category ? getCategoryName(product.category) : 'SIN CATEGORÍA';
+                        
+                        return `
+                        <div class="product-card-admin" id="product-${product.id}">
+                            <img src="${product.images?.[0] || ''}" 
+                                 alt="${product.name}" 
+                                 class="product-image-admin"
+                                 onerror="this.src=''; this.alt='Imagen no disponible';">
+                            <div class="product-info-admin">
+                                <h4>${product.name}</h4>
+                                <div class="product-meta">
+                                    <div class="product-meta-item">
+                                        <strong>Categoría:</strong> ${category}
+                                    </div>
+                                    <div class="product-meta-item">
+                                        <strong>Precio:</strong> $${product.price?.toFixed(2) || '0.00'}
+                                    </div>
+                                    <div class="product-meta-item">
+                                        <strong>Stock:</strong> ${product.stock || 0} unidades
+                                    </div>
+                                    <div class="product-meta-item">
+                                        <strong>Tallas:</strong> ${product.sizes?.join(', ') || 'No especificado'}
+                                    </div>
+                                </div>
+                                <p style="color: var(--leven-gray); font-size: 14px; line-height: 1.5; margin-top: 10px;">
+                                    ${product.description?.substring(0, 150) || 'Sin descripción'}...
+                                </p>
+                                <div class="product-actions">
+                                    <button onclick="eliminarProducto('${product.id}')" class="btn-delete">
+                                        <i class="fas fa-trash"></i> Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // MOSTRAR PEDIDOS EN ADMIN
+        function mostrarPedidosAdmin() {
+            const container = document.getElementById('orders-list');
+            if (!container) return;
+            
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h3>No hay pedidos</h3>
+                        <p>Aún no hay pedidos registrados. Los pedidos aparecerán aquí cuando los clientes realicen compras en el catálogo.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Productos</th>
+                            <th>Total</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${orders.map(order => {
+                            const orderDate = order.date ? new Date(order.date).toLocaleDateString('es-MX', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }) : 'N/A';
+                            
+                            const isPendiente = order.status === 'pendiente';
+                            const itemsCount = order.items?.length || 0;
+                            const itemsText = itemsCount === 1 ? '1 producto' : `${itemsCount} productos`;
+                            
+                            return `
+                                <tr>
+                                    <td style="font-weight: 500; font-size: 13px;">${order.id || 'N/A'}</td>
+                                    <td>
+                                        <div style="font-weight: 500;">${order.customer?.name || 'N/A'}</div>
+                                        <div style="font-size: 12px; color: var(--leven-gray); margin-top: 5px;">
+                                            ${order.customer?.phone || ''}<br>
+                                            ${order.customer?.email || ''}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 500;">${itemsText}</div>
+                                        <div style="font-size: 12px; color: var(--leven-gray); margin-top: 5px;">
+                                            ${order.items?.map(item => item.name).join(', ').substring(0, 50)}...
+                                        </div>
+                                    </td>
+                                    <td style="font-weight: 600;">$${order.total?.toFixed(2) || '0.00'}</td>
+                                    <td style="font-size: 13px;">${orderDate}</td>
+                                    <td>
+                                        <span class="order-status ${isPendiente ? 'status-pending' : 'status-completed'}">
+                                            ${isPendiente ? 'PENDIENTE' : 'COMPLETADO'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button onclick="cambiarEstadoPedido('${order.id}', ${isPendiente})" class="btn-status">
+                                            ${isPendiente ? 'Marcar Completado' : 'Marcar Pendiente'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // FUNCIÓN PARA AGREGAR PRODUCTO
+        async function agregarProducto(productData) {
+            try {
+                // Validar campos requeridos
+                if (!productData.name || !productData.category || !productData.description || 
+                    !productData.price || !productData.stock) {
+                    showNotification('Por favor completa todos los campos requeridos', 'error');
+                    return;
+                }
+                
+                // Validar URLs de imágenes
+                const imageUrls = productData.imageUrls
+                    .split(/[\n,]/)
+                    .map(url => url.trim())
+                    .filter(url => url.length > 0 && url.startsWith('http'));
+                
+                if (imageUrls.length === 0) {
+                    showNotification('Por favor ingresa al menos una URL de imagen válida', 'error');
+                    return;
+                }
+                
+                // Validar que las URLs sean válidas
+                const invalidUrls = imageUrls.filter(url => {
+                    try {
+                        new URL(url);
+                        return false;
+                    } catch {
+                        return true;
+                    }
+                });
+                
+                if (invalidUrls.length > 0) {
+                    showNotification(`${invalidUrls.length} URL(s) no son válidas`, 'error');
+                    return;
+                }
+                
+                // Validar tallas
+                if (productData.sizes.length === 0) {
+                    showNotification('Selecciona al menos una talla disponible', 'error');
+                    return;
+                }
+                
+                // Crear objeto producto
+                const product = {
+                    name: productData.name.trim(),
+                    description: productData.description.trim(),
+                    price: parseFloat(productData.price),
+                    category: productData.category,
+                    images: imageUrls,
+                    sizes: productData.sizes,
+                    stock: parseInt(productData.stock),
+                    featured: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                // Guardar en Firestore
+                await db.collection('products').add(product);
+                
+                showNotification('Producto agregado exitosamente a la colección');
+                limpiarFormularioProducto();
+                
+                // Recargar productos
+                await cargarProductos();
+                
+                // Cambiar a pestaña de gestión
+                setTimeout(() => {
+                    showAdminTab('manage', true);
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error agregando producto:', error);
+                showNotification('Error al agregar producto: ' + error.message, 'error');
+            }
+        }
+
+        // FUNCIÓN PARA ELIMINAR PRODUCTO
+        async function eliminarProducto(productId) {
+            if (!confirm('¿Estás seguro de eliminar este producto de la colección?\nEsta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            try {
+                await db.collection('products').doc(productId).delete();
+                showNotification('Producto eliminado exitosamente');
+                
+                // Eliminar del array local
+                products = products.filter(p => p.id !== productId);
+                
+                // Actualizar vista
+                mostrarProductosAdmin();
+                
+            } catch (error) {
+                console.error('Error eliminando producto:', error);
+                showNotification('Error al eliminar producto', 'error');
+            }
+        }
+
+        // FUNCIÓN PARA GUARDAR INFORMACIÓN DE EMPRESA
+        async function guardarInformacionEmpresa(info) {
+            try {
+                await db.collection('business').doc('info').set(info, { merge: true });
+                showNotification('Información de la empresa guardada exitosamente');
+            } catch (error) {
+                console.error('Error guardando información:', error);
+                showNotification('Error al guardar información', 'error');
+            }
+        }
+
+        // FUNCIÓN PARA GUARDAR COLECCIONES
+        async function guardarColecciones(colecciones) {
+            try {
+                await db.collection('business').doc('collections').set({
+                    items: colecciones,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                showNotification('Colecciones actualizadas exitosamente');
+            } catch (error) {
+                console.error('Error guardando colecciones:', error);
+                showNotification('Error al guardar colecciones', 'error');
+            }
+        }
+
+        // FUNCIÓN PARA CAMBIAR ESTADO DE PEDIDO
+        async function cambiarEstadoPedido(orderId, esPendiente) {
+            try {
+                const nuevoEstado = esPendiente ? 'completado' : 'pendiente';
+                
+                await db.collection('orders').doc(orderId).update({
+                    status: nuevoEstado,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showNotification(`Pedido ${orderId} actualizado a ${nuevoEstado}`);
+                
+                // Recargar pedidos
+                await cargarPedidos();
+                
+            } catch (error) {
+                console.error('Error actualizando pedido:', error);
+                showNotification('Error al actualizar pedido', 'error');
+            }
+        }
+
+        // FUNCIONES AUXILIARES
+        function showAdminTab(tab, noEvent = false) {
+            if (!noEvent && event) {
+                event.preventDefault();
+            }
+            
+            // Actualizar pestañas activas
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.admin-tab-content').forEach(c => {
+                c.classList.remove('active');
+                c.style.display = 'none';
+            });
+            
+            // Activar la pestaña seleccionada
+            const tabElement = document.querySelector(`.admin-tab[onclick*="${tab}"]`);
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
+            
+            const tabContent = document.getElementById('tab-' + tab);
+            if (tabContent) {
+                tabContent.classList.add('active');
+                tabContent.style.display = 'block';
+            }
+            
+            // Si es la pestaña de gestión, asegurarse de cargar productos
+            if (tab === 'manage') {
+                cargarProductos();
+            }
+            
+            // Si es la pestaña de pedidos, asegurarse de cargar pedidos
+            if (tab === 'orders') {
+                cargarPedidos();
+            }
+        }
+
+        function configurarFormularios() {
+            // Formulario agregar producto
+            document.getElementById('add-product-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    name: document.getElementById('product-name').value,
+                    description: document.getElementById('product-description').value,
+                    price: document.getElementById('product-price').value,
+                    category: document.getElementById('product-category').value,
+                    stock: document.getElementById('product-stock').value,
+                    sizes: Array.from(document.querySelectorAll('.size-option.selected'))
+                              .map(el => el.textContent),
+                    imageUrls: document.getElementById('product-image-urls').value
+                };
+                
+                if (formData.sizes.length === 0) {
+                    showNotification('Selecciona al menos una talla disponible', 'error');
+                    return;
+                }
+                
+                if (!formData.category) {
+                    showNotification('Selecciona una categoría', 'error');
+                    return;
+                }
+                
+                agregarProducto(formData);
+            });
+
+            // Formulario información empresa
+            document.getElementById('business-info-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const info = {
+                    phone: document.getElementById('business-phone').value,
+                    email: document.getElementById('business-email').value,
+                    address: document.getElementById('business-address').value,
+                    facebook: document.getElementById('business-facebook').value,
+                    instagram: document.getElementById('business-instagram').value,
+                    twitter: document.getElementById('business-twitter').value
+                };
+                
+                guardarInformacionEmpresa(info);
+            });
+
+            // Formulario colecciones
+            document.getElementById('collections-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const colecciones = [
+                    document.getElementById('collection-1').value,
+                    document.getElementById('collection-2').value,
+                    document.getElementById('collection-3').value,
+                    document.getElementById('collection-4').value
+                ].filter(item => item.trim() !== '');
+                
+                if (colecciones.length < 4) {
+                    showNotification('Por favor completa las 4 colecciones', 'error');
+                    return;
+                }
+                
+                guardarColecciones(colecciones);
+            });
+        }
+
+        function toggleSize(element) {
+            element.classList.toggle('selected');
+        }
+
+        function limpiarFormularioProducto() {
+            document.getElementById('add-product-form').reset();
+            document.querySelectorAll('.size-option.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+        }
+
+        function getCategoryName(category) {
+            // Función segura que maneja undefined
+            if (!category || typeof category !== 'string') {
+                return 'SIN CATEGORÍA';
+            }
+            
+            const categories = {
+                'women': 'MUJER',
+                'women\'s': 'MUJER',
+                'mujer': 'MUJER',
+                'men': 'HOMBRE',
+                'men\'s': 'HOMBRE',
+                'hombre': 'HOMBRE',
+                'accessories': 'ACCESORIOS',
+                'accessory': 'ACCESORIOS',
+                'accesorios': 'ACCESORIOS',
+                'new': 'NUEVA COLECCIÓN',
+                'nuevo': 'NUEVA COLECCIÓN',
+                'featured': 'DESTACADO'
+            };
+            
+            const catLower = category.toLowerCase().trim();
+            return categories[catLower] || category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+        }
+
+        function getErrorMessage(errorCode) {
+            const errors = {
+                'auth/invalid-email': 'Correo electrónico inválido',
+                'auth/user-disabled': 'Usuario deshabilitado',
+                'auth/user-not-found': 'Usuario no encontrado',
+                'auth/wrong-password': 'Contraseña incorrecta',
+                'auth/too-many-requests': 'Demasiados intentos, intenta más tarde',
+                'auth/network-request-failed': 'Error de red. Verifica tu conexión.'
+            };
+            return errors[errorCode] || 'Error al iniciar sesión. Verifica tus credenciales.';
+        }
+
+        // NOTIFICACIONES
+        function showNotification(message, type = 'success') {
+            // Remover notificaciones existentes
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notif => notif.remove());
+            
+            const colors = {
+                success: { bg: '#155724', border: '#d4edda', icon: 'fa-check-circle' },
+                error: { bg: '#721c24', border: '#f8d7da', icon: 'fa-exclamation-circle' },
+                warning: { bg: '#856404', border: '#fff3cd', icon: 'fa-exclamation-triangle' }
+            };
+            
+            const color = colors[type] || colors.success;
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas ${color.icon}"></i>
+                <div>${message}</div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                setTimeout(() => notification.remove(), 400);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
